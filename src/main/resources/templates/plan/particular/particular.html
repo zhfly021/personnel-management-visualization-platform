@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <title>招聘详情页面</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="stylesheet" href="../../layuiadmin/layui/css/layui.css" media="all">
+  <link rel="stylesheet" href="../../layuiadmin/style/admin.css" media="all">
+  <link rel="stylesheet" href="../../layuiadmin/style/template.css" media="all">
+</head>
+<body>
+
+  <div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+      <div class="layui-col-md12">
+        <div class="layui-card" style="padding-top: 5px">
+          <!-- 搜索条件开始 -->
+          <fieldset class="layui-elem-field layui-field-title">
+            <legend>查询条件</legend>
+          </fieldset>
+          <div class="layui-form">
+              <div class="layui-form-item">
+                  <div class="layui-inline">
+                      <label class="layui-form-label">招聘项目:</label>
+                      <div class="layui-input-block">
+                          <select name="projectID" >
+                              <option value="0">不限</option>
+                              <option th:each="project:${projects}" th:value="${project.id}">[[${project.name}]]</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="layui-inline">
+                      <label class="layui-form-label">用人单位:</label>
+                      <div class="layui-input-block">
+                          <input type="text" name="unitOfManual" autocomplete="off" class="layui-input">
+                      </div>
+                  </div>
+                  <div class="layui-inline">
+                      <label class="layui-form-label">用人单位:</label>
+                      <div class="layui-input-inline" lay-filter="heading">
+                          <select name="hId" id="first" lay-filter="heading">
+                              <option value="">请选择管理机构</option>
+                              <option value="0">管理部门</option>
+                              <option value="1">教学部门</option>
+                          </select>
+                      </div>
+                      <div class="layui-input-inline" lay-filter="footing">
+                          <select name="unit" id="second" lay-filter="footing" lay-search="">
+                              <option value="">请先选择管理机构</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="layui-inline">
+                      <label class="layui-form-label">状态:</label>
+                      <div class="layui-input-block">
+                          <select name="status">
+                              <option value="">不限</option>
+                              <option value="未完成">未完成</option>
+                              <option value="已完成">已完成</option>
+                          </select>
+                      </div>
+                  </div>
+
+                  <div class="layui-inline">
+                      <div class="layui-input-block">
+                          <button class="layui-btn layuiadmin-btn-admin layui-btn-normal layui-btn-sm layui-icon layui-icon-search" lay-submit lay-filter="particular-search">查询</button>
+                      </div>
+                  </div>
+              </div>
+
+
+          </div>
+          <!-- 搜索条件结束 -->
+          <div class="layui-card-body">
+            <table class="layui-hide" id="particularTable" lay-filter="particular"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display: none" id="particularToolBar">
+    <button class="layui-btn layuiadmin-btn-admin" data-type="add">添加</button>
+    <button class="layui-btn layuiadmin-btn-admin" data-type="batchDelete">批量删除</button>
+    <button class="layui-btn layui-btn-sm layui-upload-button" data-type="import" id="importData">导入</button>
+      <button class="layui-btn layui-btn-sm " id="download" onclick="download()">下载模板</button>
+  </div>
+  <div id="particularBar" style="display: none;">
+      <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">编辑</a>
+      <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+  </div>
+
+  <div id="statusBar" style="display: none;">
+      {{# if(d.status == '未完成'){ }}
+      <button class="layui-btn layui-btn-xs layui-btn-warm">未完成</button>
+      {{#  } }}
+      {{# if(d.status == '已完成'){ }}
+      <button class="layui-btn layui-btn-xs">已完成</button>
+      {{#  } }}
+  </div>
+  <script src="../../layuiadmin/layui/layui.js"></script>
+  <script>
+      function download() {
+          // window.open("http://" + window.location.host +"/excel/招聘计划详情.xlsx");
+          window.open("https://www.gejiba.com/down.php/20f82d497e039e4507fe577c78c5998c.xlsx");
+      }
+
+      layui.config({
+          base: '../../../../layuiadmin/' //静态资源所在路径
+      }).extend({
+          index: 'lib/index' //主入口模块
+      }).use(['index','form', 'upload','layer','laydate'],function () {
+          var $ = layui.$
+              ,form = layui.form
+              ,upload = layui.upload
+              ,layer =  layui.layer
+              ,laydate = layui.laydate;
+
+          //多文件列表示例
+          var uploadListIns = upload.render({
+              elem: '#importData'
+              ,url: '/excelUpload/importData' //改成您自己的上传接口
+              ,accept: 'file'
+              ,exts: 'xls|xlsx|xlsm|xlt|xltx|xltm'
+              ,multiple: false
+              ,auto: true
+              ,done: function(res){
+                  if (res.code == 200){
+                      // window.parent.location.reload();  //刷新父页面
+                      // window.location.reload();   //刷新子页面
+                      layer.msg("导入成功",{icon:6})
+                  }else {
+                      layer.msg("导入失败",{icon:2})
+                  }
+
+              }
+              ,error: function(index, upload){
+
+              }
+          });
+      }).use('table',function () {
+          var table = layui.table;
+          table.render({})
+      });
+  </script>
+
+  <script>
+  layui.config({
+    base: '../../layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index' //主入口模块
+  }).use(['index', 'jquery', 'table', 'form', 'layer', 'laydate'], function(){
+    var $ = layui.$
+    ,table = layui.table
+    ,form = layui.form
+    ,layer = layui.layer
+    ,laydate = layui.laydate;
+
+    //方法级渲染
+    table.render({
+      elem: '#particularTable'
+      ,id: 'particularTable'
+      ,url: '/plan/particular/queryPlanList'
+      ,title: '招聘详情数据'
+      ,toolbar: '#particularToolBar'
+      ,cellMinWidth:100
+      ,page: true
+      ,limit: 10
+      ,height: 'full-221'
+      ,cols: [
+              [
+        {checkbox: true, fixed: true}
+        ,{type:'numbers', field:'no',title: '序号', width:70, fixed: 'left',align:"center"}
+        ,{field:'projectName', title: '招聘项目',align:'center'}
+        ,{field:'unit',title: '用人单位',align:'center',edit: 'text'}
+        ,{field:'profession', title: '学科专业',align:'center',edit: 'text'}
+        ,{field:'job', title: '岗位类别',align:'center',edit: 'text'}
+        ,{field:'hireNumber', title: '招聘人数', sort: true,align:'center',edit: 'text'}
+        ,{field:'resume', title: '已收简历', sort: true,align:'center',edit: 'text'}
+        ,{field:'assessment', title: '已考核人员', sort: true,align:'center',edit: 'text'}
+        ,{field:'hired', title: '已录用人员', sort: true,align:'center',edit: 'text'}
+        ,{field:'status', toolbar:'#statusBar',title: '招聘状态', width:90,align:'center'}
+        ,{title: '操作', toolbar:'#particularBar', width:120, align:'center'}
+        ]
+      ]
+      ,parseData: function (res) {
+            return {
+                "code": 0,
+                "msg": res.msg,
+                "data": res.payload.content,
+                "count": res.payload.total
+            }
+        }
+
+    });
+
+      //监听单元格编辑
+      table.on('edit(particular)', function(obj){
+          var value = obj.value //得到修改后的值
+              ,data = obj.data //得到所在行所有键值
+              ,field = obj.field; //得到字段
+          console.log(obj.data)
+          $.ajax({
+              type: 'post',
+              async: true,
+              url: '/plan/particular/updatePlan',
+              data: obj.data,
+              success: function (result) {
+                if (result.code == 200){
+                    layer.msg("修改失败，请重试!", {icon: 2});
+                }else {
+                    layer.msg(result.payload, { icon: 6});
+                }
+              }
+          })
+          // window.parent.location.reload();  //刷新父页面
+          // window.location.reload();   //刷新子页面
+          table.reload('particularTable'); //数据刷新
+          table.reload('particularTable'); //数据刷新
+      });
+
+
+      //监听行工具事件
+      table.on('tool(particular)', function(obj) {
+
+          var data = obj.data;
+          var id = data.id;
+
+          if (obj.event === 'del') {
+              // 删除信息
+              layer.confirm('真的要删除这一行么', function (index) {
+                  $.ajax({
+                      url: '/plan/particular/delPlan',
+                      dataType: 'text',
+                      data: {id: id},
+                      success: function (res) {
+                          if (res.code == 200) {
+                              layer.msg(res.msg,{time:1000,icon:5})
+                          }else{
+                              layer.msg('删除成功', {
+                                  time: 1000, icon: 6
+                              })
+                              location.reload()
+                          }
+                      },
+                      error:function (data) {
+                          layer.msg("删除时发生错误，请重试...",{time:1000,icon:7})
+                          return false;
+                      }
+                  })
+                  obj.del();
+                  layer.close(index);
+              });
+
+          } else if (obj.event === 'edit') {
+              //编辑信息
+              layer.open({
+                  type: 2,
+                  title: '修改招聘项目',
+                  maxmin: true,
+                  shadeClose: true, //点击遮罩关闭
+                  content: '/plan/particular/editParticular/' + id,
+                  area: screen() < 1 ? ['90%', '450px'] : ['780px', '600px']
+                  ,btn: ['修改', '取消']
+                  ,yes: function(index, layero){
+                      var iframeWindow = window['layui-layer-iframe'+ index]
+                          ,submitID = 'submit'
+                          ,submit = layero.find('iframe').contents().find('#'+ submitID);
+                      //监听提交
+                      iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                          var field = data.field; //获取提交的字段
+                          $.ajax({
+                              type: "POST",
+                              url: "/plan/particular/updatePlan",
+                              dataType: 'JSON',
+                              async: false,
+                              data: field,
+                              success: function (res) {
+                                  if (res.code === 200) {
+                                      layer.msg(res.msg,{time:1000,icon:5})
+                                  } else {
+                                      layer.msg('修改成功!', {icon: 6, time: 2000,end: function f() {
+                                              var index = parent.layer.getFrameIndex(window.name);
+                                              parent.layer.close(index)
+                                          }})
+                                  }
+                              },
+                              error:function (data) {
+                                  layer.msg("修改时发生错误，请重试...",{time:1000,icon:7})
+                              }
+                          });
+                          table.reload('particularTable'); //数据刷新
+                          table.reload('particularTable'); //数据刷新
+                          layer.close(index); //关闭弹层
+                      });
+                      submit.trigger('click');
+                  }
+              })
+          }
+      })
+
+      form.on("select(heading)",function () {
+          var hId = $("#first").val();
+          // 删除option
+          $('#second option').remove();
+          // 添加第一项
+          var second = $('#second');
+          second.append('<option value=' + '选择部门' + '>' + '</option>');
+
+
+          // 异步请求
+          $.ajax({
+              type:"POST",
+              url:"/plan/particular/getDepart",
+              dataType:"JSON",
+              async:true,
+              data:{hId:hId},
+              success:function (res) {
+                  console.log(res);
+                  // 动态增加内容
+                  for(var i = 0;i < res.length;i++){
+                      $('#second').append('<option value='+res[i] + '>' + res[i] + '</option>');
+                  }
+                  // 重新渲染下拉框
+                  form.render('select');
+              }
+          })
+
+      })
+
+    //监听搜索
+      form.on('submit(particular-search)', function(data){
+          var field = data.field;
+          console.log(field);
+          if(field.unit == ""){
+              field.unit = field.unitOfManual;
+          }
+          console.log(field);
+          //执行重载
+          table.reload('particularTable', {
+              method: 'post'
+              ,page: {
+                  curr : 1 //重新从第一页开始
+              }
+              ,where: {
+                  projectID : field.projectID
+                  ,unit : field.unit
+                  ,status : field.status
+              }
+          });
+      });
+
+
+      var active = {
+          batchDelete: function(){
+              var checkStatus = table.checkStatus('particularTable')
+                  ,checkData = checkStatus.data; //得到选中的数据
+
+              if(checkData.length === 0){
+                  return layer.msg('请选择数据');
+              }
+
+              layer.confirm('确定删除吗？', function(index) {
+                  //执行 Ajax 后重载
+                  var str = "";
+                  for (var i = 0; i < checkData.length; i++) {
+                      if(i + 1 == checkData.length){
+                          str += checkData[i].id;
+                      }else{
+                          str += checkData[i].id + ",";
+                      }
+                  }
+
+                  $.ajax({
+                      url: '/plan/particular/bacthDelPlan',
+                      type: 'POST',
+                      data: {
+                          "data" : str
+                      },
+                      success: function (res) {
+                          if (res.code == 100) {
+                              ajaxCode = 100;
+                          } else if (res.code == 200) {
+                              if (res.extend.mc_msg != null) {
+                                  layer.msg(res.extend.mc_msg, {time: 2000, icon: 5});
+                              } else {
+                                  ajaxCode = 200;
+                              }
+                          }
+                      },
+                      error: function () {
+                          layer.msg("删除失败，请重试!", {time: 1000, icon: 7});
+                      }
+                  })
+
+                  // table.reload('bjjsTable');
+                  // table.reload('bjjsTable');
+                  location.reload()
+                  layer.msg('已删除');
+              });
+          },
+          add: function(){
+              layer.open({
+                  type:  2
+                  ,title: '发布招聘项目'
+                  ,maxmin: true
+                  ,content: '/plan/particular/addParticular'
+                  ,area: screen() < 1 ? ['90%', '450px'] : ['780px', '600px']
+                  ,btn: ['提交', '取消']
+                  ,yes: function(index, layero){
+                      var iframeWindow = window['layui-layer-iframe'+ index]
+                          ,submitID = 'submit'
+                          ,submit = layero.find('iframe').contents().find('#'+ submitID);
+
+                      //监听提交
+                      iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                          var field = data.field; //获取提交的字段
+                          $.ajax({
+                              //几个参数需要注意一下
+                              type: "POST",
+                              url: "/plan/particular/addPlan",
+                              dataType: 'JSON',
+                              async: false,
+                              data: field,
+                              success: function (res) {
+                                  if (res.code === 200) {
+                                      layer.msg(res.msg,{time:1000,icon:5})
+                                  } else {
+                                      layer.msg('添加成功!', {icon: 6, time: 2000,end: function f() {
+                                              var index = parent.layer.getFrameIndex(window.name);
+                                              parent.layer.close(index)
+                                          }})
+                                  }
+                              },
+                              error:function (data) {
+                                  layer.msg("提交时错误，请重试...",{time:1000,icon:7})
+                              }
+                          });
+
+                          table.reload('particularTable'); //数据刷新
+                          table.reload('particularTable'); //数据刷新
+                          layer.close(index); //关闭弹层
+                      });
+                      submit.trigger('click');
+                  }
+              });
+          },
+      }
+
+
+      //判断浏览器大小方法
+      function screen() {
+          //获取当前窗口的宽度
+          var width = $(window).width();
+          if (width > 768) {
+              return 1;   //小屏幕
+          } else {
+              return 0;   //超小屏幕
+          }
+      }
+
+      $('.layui-btn.layuiadmin-btn-admin').on('click', function(){
+          var type = $(this).data('type');
+          active[type] ? active[type].call(this) : '';
+      });
+  });
+  </script>
+</body>
+</html>

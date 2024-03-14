@@ -1,1 +1,1 @@
-# Personnel-recruitment-data-visualization-management-integration-service-platform  V1.0
+# Documentation for the project is being archived and will be released soon.
